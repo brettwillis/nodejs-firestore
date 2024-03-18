@@ -137,8 +137,9 @@ function getAll(
   options?: {
     fieldMask?: string[];
     transactionId?: Uint8Array | string;
+    readTime?: Timestamp;
     newTransaction?: {
-      readOnly?: {readTime?: Timestamp};
+      readOnly?: {};
       readWrite?: {prevTransactionId?: Uint8Array | string};
     };
     error?: Error;
@@ -150,6 +151,8 @@ function getAll(
   };
   if (options?.transactionId) {
     request.transaction = transactionId(options.transactionId);
+  } else if (options?.readTime) {
+    request.readTime = options.readTime.toProto().timestampValue;
   } else if (options?.newTransaction?.readWrite) {
     request.newTransaction = {
       readWrite: options.newTransaction.readWrite.prevTransactionId
@@ -162,13 +165,7 @@ function getAll(
     };
   } else if (options?.newTransaction?.readOnly) {
     request.newTransaction = {
-      readOnly: options.newTransaction.readOnly.readTime
-        ? {
-            readTime:
-              options?.newTransaction?.readOnly.readTime.toProto()
-                .timestampValue,
-          }
-        : {},
+      readOnly: {},
     };
   }
 
@@ -230,6 +227,7 @@ function getAll(
 function getDocument(options?: {
   document?: string;
   transactionId?: Uint8Array | string;
+  readTime?: Timestamp;
   newTransaction?: {
     readOnly?: {readTime?: Timestamp};
     readWrite?: {prevTransactionId?: Uint8Array | string};
@@ -241,8 +239,9 @@ function getDocument(options?: {
 
 function query(options?: {
   transactionId?: Uint8Array | string;
+  readTime?: Timestamp;
   newTransaction?: {
-    readOnly?: {readTime?: Timestamp};
+    readOnly?: {};
     readWrite?: {prevTransactionId?: Uint8Array | string};
   };
   error?: Error;
@@ -270,14 +269,11 @@ function query(options?: {
   };
   if (options?.transactionId) {
     request.transaction = transactionId(options.transactionId);
+  } else if (options?.readTime) {
+    request.readTime = options.readTime.toProto().timestampValue;
   } else if (options?.newTransaction?.readOnly) {
     request.newTransaction = {
-      readOnly: options.newTransaction.readOnly.readTime
-        ? {
-            readTime:
-              options.newTransaction.readOnly.readTime.toProto().timestampValue,
-          }
-        : {},
+      readOnly: {},
     };
   } else if (options?.newTransaction?.readWrite) {
     request.newTransaction = {
@@ -864,9 +860,7 @@ describe('transaction operations', () => {
         readTime: Timestamp.fromMillis(1),
       },
       (transaction, docRef) => transaction.get(docRef),
-      getDocument({
-        newTransaction: {readOnly: {readTime: Timestamp.fromMillis(1)}},
-      })
+      getDocument({readTime: Timestamp.fromMillis(1)})
     );
   });
 
@@ -882,9 +876,7 @@ describe('transaction operations', () => {
           expect(results.docs[0].id).to.equal('documentId');
         });
       },
-      query({
-        newTransaction: {readOnly: {readTime: Timestamp.fromMillis(2)}},
-      })
+      query({readTime: Timestamp.fromMillis(2)})
     );
   });
 
